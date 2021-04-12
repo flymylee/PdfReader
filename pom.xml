@@ -7,7 +7,7 @@
     <groupId>kr.ac.ggu</groupId>
     <artifactId>PdfReader</artifactId>
     <packaging>jar</packaging>
-    <version>0.8-RELEASE</version>
+    <version>2021.04-RELEASE</version>
 
     <name>PdfReader</name>
     <url>https://www.ggu.ac.kr/</url>
@@ -15,6 +15,9 @@
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
+        <exeFileName>PdfReader</exeFileName>
+        <jarFileName>PdfReader-2021.04-RELEASE-jar-with-dependencies.jar</jarFileName>
+        <launch4jVersion>2021.04.10.00</launch4jVersion>
     </properties>
 
     <dependencies>
@@ -36,6 +39,12 @@
             <version>2.0.22</version>
             <scope>compile</scope>
         </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>com.akathist.maven.plugins.launch4j</groupId>-->
+<!--            <artifactId>launch4j-maven-plugin</artifactId>-->
+<!--            <version>2.1.0</version>-->
+<!--        </dependency>-->
 
     </dependencies>
 
@@ -90,7 +99,7 @@
                         <archive>
                             <manifest>
                                 <addClasspath>true</addClasspath>
-                                <mainClass>kr.ac.ggu.App</mainClass>
+                                <mainClass>kr.ac.ggu.pdfreader.App</mainClass>
                             </manifest>
                         </archive>
                         <descriptorRefs>
@@ -108,5 +117,49 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>com.akathist.maven.plugins.launch4j</groupId>
+                <artifactId>launch4j-maven-plugin</artifactId>
+                <version>2.1.0</version>
+                <executions>
+                    <execution>
+                        <id>l4j-clui</id>
+                        <phase>package</phase>
+                        <goals><goal>launch4j</goal></goals>
+                        <configuration>
+                            <headerType>console</headerType>
+                            <outfile>target/${exeFileName}.exe</outfile>
+                            <jar>target/${jarFileName}</jar>
+                            <errTitle>encc</errTitle>
+                            <classPath>
+                                <mainClass>kr.ac.ggu.pdfreader.App</mainClass>
+                                <addDependencies>true</addDependencies>
+                                <preCp>anything</preCp>
+                            </classPath>
+                            <jre>
+                                <path>${java.home}</path>
+                                <minVersion>${maven.compiler.source}</minVersion>
+                                <opts>
+                                    <opt>-Djava.endorsed.dirs=./endorsed</opt>
+                                </opts>
+                            </jre>
+                            <versionInfo>
+                                <fileVersion>${launch4jVersion}</fileVersion>
+                                <txtFileVersion>${launch4jVersion}</txtFileVersion>
+                                <fileDescription>${project.name}</fileDescription>
+                                <copyright>MIT</copyright>
+                                <productVersion>${launch4jVersion}</productVersion>
+                                <txtProductVersion>${launch4jVersion}</txtProductVersion>
+                                <productName>${project.name}</productName>
+                                <originalFilename>${exeFileName}.exe</originalFilename>
+                                <!-- internalName is mandatory -->
+                                <internalName>${exeFileName}</internalName>
+                            </versionInfo>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 </project>

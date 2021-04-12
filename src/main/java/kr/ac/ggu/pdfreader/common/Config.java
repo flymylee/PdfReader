@@ -1,4 +1,4 @@
-package kr.ac.ggu.common;
+package kr.ac.ggu.pdfreader.common;
 
 /**
  * 앱의 커스터마이징을 위한 클래스

@@ -1,39 +1,29 @@
-package kr.ac.ggu;
+package kr.ac.ggu.pdfreader;
 
-import kr.ac.ggu.common.Attribute;
-import kr.ac.ggu.common.Util;
-import org.apache.commons.lang3.ArrayUtils;
+import kr.ac.ggu.pdfreader.common.Attribute;
+import kr.ac.ggu.pdfreader.common.Cmd;
+import kr.ac.ggu.pdfreader.common.Util;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.Scanner;
 
 public class App
 {
     private static final Attribute attribute = Attribute.getInstance();
     private static final Util util = Util.getInstance();
-
+    private static final Cmd cmd = Cmd.getInstance();
 
     private App() {}
 
     public static void main(String[] args) throws IOException {
+//        attribute.codePage = Integer.parseInt(RegExUtils.removeAll(cmd.execCommand("chcp"), "[^\\d]"));  // 실행되는 콘솔창의 코드페이지 확인
+//        attribute.setCharset();  // 코드페이지에 맞는 캐릭터셋 지정(EUC-KR, UTF-8 중 양자택일)
+
         // 디버그 모드 감지 시도
         for(int i=0;i<args.length;i++) {
             if(args[i].trim().equals("--debug")) {
                 attribute.debug = true;
-                // create an array to hold elements after deletion
-                String[] copyArray = new String[args.length - 1];
-
-                // copy elements from original array from beginning till index into copyArray
-                System.arraycopy(args, 0, copyArray, 0, i);
-
-                // copy elements from original array from i+1 till end into copyArray
-                System.arraycopy(args, i + 1, copyArray, i, args.length - i - 1);
-
-                // display the copied array after deletion
-                System.out.println("Array after deleting an element: "
-                        + Arrays.toString(copyArray));
-
+                break;
             }
         }
 
@@ -47,7 +37,8 @@ public class App
             inputFile = new File(filename);
 
             while(!inputFile.isFile() && filename.length() > 0) {
-                System.out.println("잘못된 파일(경로)입니다. 다시 입력해주세요.");
+
+                util.out.println("잘못된 파일(경로)입니다. 다시 입력해주세요.");
 
                 filename = util.inputFilename(scanner);
             }

@@ -1,10 +1,11 @@
-package kr.ac.ggu.common;
+package kr.ac.ggu.pdfreader.common;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.text.PDFTextStripper;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.regex.Pattern;
 
 public class Util {
     private static final Attribute attribute = Attribute.getInstance();
+    private static final Cmd cmd = Cmd.getInstance();
 
     private static class LazyHolder {
         public static final Util INSTANCE = new Util();
@@ -30,7 +32,17 @@ public class Util {
     private String docRunDay;
     private String docReceiveDay;
     private String docReceiveNo;
+    private int docReceiveNoInt;
     private String pdfFileName;
+
+    public PrintStream out;
+    {
+        try {
+            out = new PrintStream(System.out, true, attribute.charset.toString());
+        } catch (UnsupportedEncodingException unsupportedEncodingException) {
+            unsupportedEncodingException.printStackTrace();
+        }
+    }
 
     /**
      * This will extract the text with regular expression
@@ -62,6 +74,13 @@ public class Util {
      */
     public String regexMatch(String text, String regex) {
         return regexMatch(text, regex, Attribute.MODE_SINGLE_LINE);
+    }
+
+    /**
+     * 콘솔 코드페이지를 읽어들여 Attribute.codePage 필드에 넣어주는 메소드
+     */
+    public void setCodePage() {
+//        regexMatch(cmd.execCommand("chcp"), "");
     }
 
     /**
@@ -111,19 +130,25 @@ public class Util {
     }
 
     /**
-     * UTF-8 txt 파일을 저장하는 메소드
+     * txt 파일을 저장하는 메소드
      *
      * @param filename 저장할 파일 이름
      * @param text     저장할 내용
+     * @param charset  캐릭터셋(기본값: UTF-8)
      * @throws IOException
      */
-    public void saveFile(String filename, String text) throws IOException {
+    public void saveFile(String filename, String text, String charset) throws IOException {
         // 파일 객체 생성
         File outputFile = new File(filename);
 
         // Writer 객체 생성
         FileOutputStream fileOutputStream = new FileOutputStream(outputFile.getPath(), true); // true 지정시 파일의 기존 내용에 이어서 작성
-        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, StandardCharsets.UTF_8);
+        OutputStreamWriter outputStreamWriter; // 지원하지 않은 캐릭터셋일 경우, 무조건 UTF-8로 캐릭터셋 설정
+        try {
+            outputStreamWriter = new OutputStreamWriter(fileOutputStream, charset);
+        } catch(UnsupportedEncodingException unsupportedEncodingException) {
+            outputStreamWriter = new OutputStreamWriter(fileOutputStream, StandardCharsets.UTF_8);
+        }
         BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
 
         // 파일안에 문자열 쓰기
@@ -134,6 +159,13 @@ public class Util {
         bufferedWriter.close();
         outputStreamWriter.close();
         fileOutputStream.close();
+    }
+    /**
+     * 캐릭터셋이 없을 경우, UTF-8 txt 파일을 저장하도록 메소드 오버로딩
+     * @throws IOException
+     */
+    public void saveFile(String filename, String text) throws IOException {
+        saveFile(filename, text, "UTF-8");
     }
 
     /**
@@ -198,11 +230,17 @@ public class Util {
             docRunDay = regexMatch(text, attribute.REGEX_DOCUMENT_ENFORCEMENT_DAY).replaceAll("-", ".").trim(); // 시행일자
             docReceiveDay = regexMatch(text, attribute.REGEX_DOCUMENT_RECEIVE_DAY).replaceAll("-", ".").trim(); // 접수일자
             docReceiveNo = regexMatch(text, attribute.REGEX_DOCUMENT_RECEIVE_NUMBER).trim(); // 접수번호
+            try {
+                docReceiveNoInt = Integer.parseInt(docReceiveNo);
+            } catch (NumberFormatException numberFormatException) {
+//                numberFormatException.printStackTrace();
+                docReceiveNoInt = 0;
+            }
 
             pdfFileName = pdfFile.getName(); // PDF 파일명(변경 전)
 
             // 디버그 모드일 때 문서 정보 콘솔로 출력
-            if(attribute.debug) {
+            if (attribute.debug) {
                 System.out.println(text);
 
                 System.out.println("_____TEST_____");
@@ -216,29 +254,27 @@ public class Util {
             else {
 
                 // 문서정보 추출결과 저장
-                saveFile("result.txt", String.format(attribute.RESULT_FORMAT, docReceiveDay, agencyName, docNo, docName));
+                saveFile("result.txt", String.format(attribute.RESULT_FORMAT, runGetter(attribute.RESULT_FORMAT_PARAM_0), runGetter(attribute.RESULT_FORMAT_PARAM_1), runGetter(attribute.RESULT_FORMAT_PARAM_2), runGetter(attribute.RESULT_FORMAT_PARAM_3), runGetter(attribute.RESULT_FORMAT_PARAM_4), runGetter(attribute.RESULT_FORMAT_PARAM_5), runGetter(attribute.RESULT_FORMAT_PARAM_6), runGetter(attribute.RESULT_FORMAT_PARAM_7), runGetter(attribute.RESULT_FORMAT_PARAM_8)));
 
                 // 문서 본문 파일명 변경 명령어 생성
-                saveFile("rename.bat", String.format(attribute.RENAME_FORMAT, pdfFileName, docReceiveNo, docName));
+                saveFile("rename.bat", String.format(attribute.RENAME_FORMAT, runGetter(attribute.RENAME_FORMAT_PARAM_0), runGetter(attribute.RENAME_FORMAT_PARAM_1), runGetter(attribute.RENAME_FORMAT_PARAM_2), runGetter(attribute.RENAME_FORMAT_PARAM_3), runGetter(attribute.RENAME_FORMAT_PARAM_4), runGetter(attribute.RENAME_FORMAT_PARAM_5), runGetter(attribute.RENAME_FORMAT_PARAM_6), runGetter(attribute.RENAME_FORMAT_PARAM_7), runGetter(attribute.RENAME_FORMAT_PARAM_8)), "EUC-KR");
 
                 // 문서별 폴더 생성 명령어 생성
-                saveFile("mkdir.bat", String.format(attribute.MKDIR_FORMAT, docReceiveNo, docName));
+                saveFile("mkdir.bat", String.format(attribute.MKDIR_FORMAT, runGetter(attribute.MKDIR_FORMAT_PARAM_0), runGetter(attribute.MKDIR_FORMAT_PARAM_1), runGetter(attribute.MKDIR_FORMAT_PARAM_2), runGetter(attribute.MKDIR_FORMAT_PARAM_3), runGetter(attribute.MKDIR_FORMAT_PARAM_4), runGetter(attribute.MKDIR_FORMAT_PARAM_5), runGetter(attribute.MKDIR_FORMAT_PARAM_6), runGetter(attribute.MKDIR_FORMAT_PARAM_7), runGetter(attribute.MKDIR_FORMAT_PARAM_8)), "EUC-KR");
             }
-
-            try {
-                String resultParam0 = (String) this.getClass().getField(attribute.RESULT_FORMAT_PARAM_0).get(this);
-                String resultParam1 = (String) this.getClass().getField(attribute.RESULT_FORMAT_PARAM_1).get(this);
-                String resultParam2 = (String) this.getClass().getField(attribute.RESULT_FORMAT_PARAM_2).get(this);
-                String resultParam3 = (String) this.getClass().getField(attribute.RESULT_FORMAT_PARAM_3).get(this);
-                String renameParam0 = (String) this.getClass().getField(attribute.RENAME_FORMAT_PARAM_0).get(this);
-                String renameParam1 = (String) this.getClass().getField(attribute.RENAME_FORMAT_PARAM_1).get(this);
-                String renameParam2 = (String) this.getClass().getField(attribute.RENAME_FORMAT_PARAM_2).get(this);
-                String mkdirParam0 = (String) this.getClass().getField(attribute.MKDIR_FORMAT_PARAM_0).get(this);
-                String mkdirParam1 = (String) this.getClass().getField(attribute.MKDIR_FORMAT_PARAM_1).get(this);
-            } catch (NoSuchFieldException | IllegalAccessException noSuchFieldException) {
-                noSuchFieldException.printStackTrace();
-            }
-
         }
+    }
+
+// 컴파일 이후에 외부 파일에 정의된 이름을 가지고 필드에 접근하기 위한 시도
+    public Object runGetter(String fieldName) {
+        try {
+            Field field = this.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(this);
+        } catch (NoSuchFieldException | IllegalAccessException exception) {
+            exception.printStackTrace();
+        }
+
+        return null;
     }
 }
